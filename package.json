@@ -1,0 +1,11 @@
+{
+  "name": "rununtil",
+  "version": "1.0.0",
+  "description": "Run a specified function until a certain condition is met.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha tests/*.test.js"
+  },
+  "author": "Logan Esenther (logan@cal.berkeley.edu)",
+  "license": "ISC"
+}
