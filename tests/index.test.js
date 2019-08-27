@@ -1,5 +1,6 @@
 const assert = require('assert');
 const runUntil = require('../');
+const ruLog = require('../ruLog');
 
 describe('Use runUntil on static functions', _ => {
 
@@ -153,7 +154,7 @@ describe('Use runUntil with promises', _ => {
 
 describe('Expected result as a function', _ => {
 
-    it('should use a runUntil and evaluate with expectedResult as a function', done => {
+    it('should use runUntil and evaluate with expectedResult as a function', done => {
         const testFunc = val => { return { prop: val }; };
         const testParams = 30337;
         const attempts = 1000;
@@ -163,6 +164,27 @@ describe('Expected result as a function', _ => {
         runUntil(testFunc, testParams, attempts, expectedResult, adjustmentFunc)
         .then(result => {
             assert.equal(result, true);
+            done();
+        });
+    });
+
+});
+
+describe('Use ruLog to collect data about runUntil execution', _ => {
+
+    it('should use ruLog to collect data', done => {
+        const testFunc = val => { return { prop: val }; };
+        const testParams = 30337;
+        const attempts = 1000;
+        const log = new ruLog(testParams);
+        const expectedResult = result => log.setResult(result) && result.prop === 31337;
+        const adjustmentFunc = params => log.setParams([ params[0] + 1 ]);
+
+        runUntil(testFunc, testParams, attempts, expectedResult, adjustmentFunc)
+        .then(result => {
+            assert.equal(result, true);
+            assert.equal(log.getData().length, 1001);
+            assert.equal(log.getData(1000).result.prop, 31337);
             done();
         });
     });

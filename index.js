@@ -11,25 +11,20 @@
  * @param {Number|String|Function} expectedResult The value the function should return or a function returning a promise that will evaluate the return value
  * @param {Function} adjustParams A function that will operate on the params each iteration
  */
-async function runUntil(func, params, tries, expectedResult, adjustParams) {
+async function runUntil(func, params, tries, expectedResult, adjustParams = _ => _) {
+    // Support for adding a single param without having to wrap in an array
     if (params !== null && params.constructor !== Array) {
         params = [ params ];
     }
 
+    const history = []; // should contain the attempt number, the input params, and the expected result
+
     /**
      * Adjust the parameters if needed and run again
      */
-    const _tryAgain = _ => {
-        if (tries <= 0) {
-            return false;
-        }
-
-        const _params = adjustParams
-        ? adjustParams(params) 
-        : params;
-
-        return runUntil(func, _params, --tries, expectedResult, adjustParams);
-    };
+    const _tryAgain = _ => (tries > 0)
+    ? runUntil(func, adjustParams(params), --tries, expectedResult, adjustParams)
+    : false;
 
     /**
      * Evaluate the result to determine if conditions have been satified and we can stop running.
@@ -37,6 +32,9 @@ async function runUntil(func, params, tries, expectedResult, adjustParams) {
      * @param {*} result
      */
     const _evaluateResult = result => {
+        if (result === expectedResult) {
+            return true;
+        }
         return result === expectedResult
         ? true
         : ( Promise.resolve(expectedResult) === expectedResult
@@ -51,12 +49,15 @@ async function runUntil(func, params, tries, expectedResult, adjustParams) {
     };
 
     try {
+        // Run the function
         const result = func.apply(null, params);
 
+        // If we get a promise, wait for it to resolve to evaluate, otherwise evaluate the result right away
         return Promise.resolve(result) === result
         ? result.then(_evaluateResult)
         : _evaluateResult(result);
     } catch(e) {
+        // If the function throws an error, handle the error with the evaluate method
         return _evaluateResult(e);
     }
 }
