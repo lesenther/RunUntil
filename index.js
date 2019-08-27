@@ -2,7 +2,7 @@
 
 /**
  * RunUntil.js
- * 
+ *
  * Run a function until an expected result is returned or until tries count is exhausted
  *
  * @param {Function} func The function to run
@@ -10,20 +10,21 @@
  * @param {Number} tries The number of times to attempt to run the function
  * @param {Number|String|Function} expectedResult The value the function should return or a function returning a promise that will evaluate the return value
  * @param {Function} adjustParams A function that will operate on the params each iteration
+ * @param {Array|Boolean} log Array for data collection or false if unused (default)
  */
-async function runUntil(func, params, tries, expectedResult, adjustParams = _ => _) {
+async function runUntil(func, params, tries, expectedResult, adjustParams = _ => _, log = false) {
     // Support for adding a single param without having to wrap in an array
     if (params !== null && params.constructor !== Array) {
         params = [ params ];
     }
 
-    const history = []; // should contain the attempt number, the input params, and the expected result
+    const startTime = new Date();
 
     /**
      * Adjust the parameters if needed and run again
      */
-    const _tryAgain = _ => (tries > 0)
-    ? runUntil(func, adjustParams(params), --tries, expectedResult, adjustParams)
+    const tryAgain = _ => (tries > 0)
+    ? runUntil(func, adjustParams(params), --tries, expectedResult, adjustParams, log)
     : false;
 
     /**
@@ -32,20 +33,25 @@ async function runUntil(func, params, tries, expectedResult, adjustParams = _ =>
      * @param {*} result
      */
     const _evaluateResult = result => {
-        if (result === expectedResult) {
-            return true;
-        }
+        log && log.push({
+            index: log.length,
+            params,
+            startTime,
+            endTime: new Date(),
+            result
+        });
+
         return result === expectedResult
         ? true
         : ( Promise.resolve(expectedResult) === expectedResult
             ? expectedResult(result)
             .then(_ => true)
-            .catch(_ => _tryAgain)
-            : ( typeof expectedResult === 'function'
+            .catch(_ => tryAgain)
+            : ( expectedResult.constructor === Function
                 ? ( expectedResult(result)
                     ? true
-                    : _tryAgain() )
-                : _tryAgain() ) );
+                    : tryAgain() )
+                : tryAgain() ) );
     };
 
     try {

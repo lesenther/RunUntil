@@ -1,6 +1,5 @@
 const assert = require('assert');
 const runUntil = require('../');
-const ruLog = require('../ruLog');
 
 describe('Use runUntil on static functions', _ => {
 
@@ -170,21 +169,21 @@ describe('Expected result as a function', _ => {
 
 });
 
-describe('Use ruLog to collect data about runUntil execution', _ => {
+describe('Collect data about runUntil execution', _ => {
 
-    it('should use ruLog to collect data', done => {
+    it('should use log param to collect data', done => {
         const testFunc = val => { return { prop: val }; };
         const testParams = 30337;
         const attempts = 1000;
-        const log = new ruLog(testParams);
-        const expectedResult = result => log.setResult(result) && result.prop === 31337;
-        const adjustmentFunc = params => log.setParams([ params[0] + 1 ]);
+        const expectedResult = result => result.prop === 31337;
+        const adjustmentFunc = params => [ params[0] + 1 ];
+        const log = [];
 
-        runUntil(testFunc, testParams, attempts, expectedResult, adjustmentFunc)
+        runUntil(testFunc, testParams, attempts, expectedResult, adjustmentFunc, log)
         .then(result => {
             assert.equal(result, true);
-            assert.equal(log.getData().length, 1001);
-            assert.equal(log.getData(1000).result.prop, 31337);
+            assert.equal(log.length, 1001);
+            assert.equal(log[1000].result.prop, 31337);
             done();
         });
     });
